@@ -10,7 +10,7 @@ Repozytorium przygotowane do pierwszej lekcji o GitHub Actions.
 
 ## Czego jeszcze nie ma
 - brak katalogu `.github/workflows/`,
-- brak pipeline'u CI.
+- brak pipeline'u CI.ss
 
 ## Cel na lekcji
 Dodać pierwszy workflow GitHub Actions, który:
