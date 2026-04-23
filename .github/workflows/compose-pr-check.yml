@@ -1,0 +1,51 @@
+name: Compose PR Check
+
+on:
+  pull_request:
+
+jobs:
+  compose-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Start compose stack
+        run: docker compose up -d --build
+
+      - name: Wait for app startup
+        run: sleep 10
+
+      - name: Smoke test /health
+        run: curl --fail http://127.0.0.1:8000/health
+      
+      - name: Save logs
+        if: always()
+        run: docker compose logs > compose.log
+      - name: Upload compose logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+            name: compose-logs
+            path: compose.log
+            if-no-files-found: warn
+      - name: Add summary to GITHUB_STEP_SUMMARY
+        if: always()
+        run: |
+          if["${{steps.smoke.outcome}}" = "success"]; then
+            RESULT="yes"
+          else"
+            RESULT="no"
+          fi
+          {
+          echo "## Compose smoke summary"
+          echo ""
+          echo "- Event: ${{github.event_name}}"
+          echo "- Ref: ${{github.ref}}"
+          echo "- Smoke test passed: ${RESULT}"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Stop compose stack
+        if: always()
+        run: docker compose down
+   
