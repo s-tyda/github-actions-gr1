@@ -1,0 +1,49 @@
+name: Compose Pull Request Check
+
+on:
+  pull_request:
+
+jobs:
+  compose-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Start docker compose
+        run: docker compose up -d --build
+
+      - name: Wait for app
+        run: sleep 5
+
+      - name: Smoke test
+        id: smoke
+        run: curl --fail http://127.0.0.1:8000/health
+
+      - name: Save logs
+        if: always()
+        run: docker compose logs > compose.log
+
+
+      - name: Upload logs
+        if: always() 
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-logs-${{ github.event.pull_request.number }}
+          path: compose.log
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Smoke Test" >> $GITHUB_STEP_SUMMARY
+          echo " - Event: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo " - Ref: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo " - Result: ${{ steps.smoke.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "#### ZADANIE 3 " >> $GITHUB_STEP_SUMMARY
+          echo " - Actor: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo " - PR event: ${{ github.event.pull_request.number }} " >> $GITHUB_STEP_SUMMARY
+
+      - name: Stop compose
+        if: always()
+        run: docker compose down
